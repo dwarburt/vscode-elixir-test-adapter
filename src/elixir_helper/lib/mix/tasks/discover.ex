@@ -9,8 +9,10 @@ defmodule Mix.Tasks.Discover do
     all_children = get_test_files(start_path)
     |> Enum.flat_map(&get_test_methods/1)
 
-    results = new_suite("root", all_children)
-    IO.inspect(results, limit: :infinity)
+    new_suite("root", all_children)
+    |> Jason.encode!()
+    |> IO.puts()
+
   end
   def new_suite(file_path, children \\ []), do: %{type: "suite", id: file_path, label: file_path, children: children}
 

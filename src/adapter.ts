@@ -76,9 +76,27 @@ export class ElixirAdapter implements TestAdapter {
     }
     this.disposables = [];
   }
+  async mix_deps_get() : Promise<string> {
+    let cmd = `mix deps.get`
+    const execArgs: childProcess.ExecOptions = {
+      cwd: this.context.asAbsolutePath('./src/elixir_helper'),
+      maxBuffer: 8192 * 8192
+    };
+    return new Promise<string>((resolve, reject) => {
+      childProcess.exec(cmd, execArgs, (err, stdout) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(stdout)
+        }
+      });
+    });
+  }
   async loadElixirTests() : Promise<TestSuiteInfo> {
+    let deps_ok = await this.mix_deps_get();
+    console.log(deps_ok);
     let testDatap = new Promise<TestSuiteInfo>((resolve, reject) => {
-      let cmd = `mix run discover ${this.workspace.uri.fsPath + "/test"}`;
+      let cmd = `mix discover ${this.workspace.uri.fsPath + "/test"}`;
       const execArgs: childProcess.ExecOptions = {
         cwd: this.context.asAbsolutePath('./src/elixir_helper'),
         maxBuffer: 8192 * 8192
@@ -95,29 +113,6 @@ export class ElixirAdapter implements TestAdapter {
     return testDatap;
   }
   parse(jsonOutput : string) : TestSuiteInfo {
-    let kids = JSON.parse(jsonOutput);
-    let children = kids.map((child: any[]) => {
-      let fname = child[0]
-      return {
-        type: 'suite',
-        id: fname,
-        label: fname,
-        children: child[1].map((test: any[]) => {
-          let func_line = `${test[0]}:${test[1]}`
-          let id = `${fname}#${func_line}`
-          return {
-            type: 'test',
-            id: id,
-            label: func_line
-          }
-        }),
-      };
-    });
-    return {
-      type: 'suite',
-      id: 'root',
-      label: 'ExUnit',
-      children: children
-    } as TestSuiteInfo
+    return JSON.parse(jsonOutput) as TestSuiteInfo;
   }
 }
