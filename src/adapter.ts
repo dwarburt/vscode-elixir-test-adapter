@@ -77,13 +77,10 @@ export class ElixirAdapter implements TestAdapter {
     this.disposables = [];
   }
   async loadElixirTests() : Promise<TestSuiteInfo> {
-    console.log("loading elixir tests");
     let testDatap = new Promise<TestSuiteInfo>((resolve, reject) => {
-      console.log("Going into run elixir discover");
-      let cmd = `elixir ${this.context.asAbsolutePath('./src/elixir_helper/discover.exs')}`;
-      console.log(`command is ${cmd}`)
+      let cmd = `mix run discover ${this.workspace.uri.fsPath + "/test"}`;
       const execArgs: childProcess.ExecOptions = {
-        cwd: this.workspace.uri.fsPath + "/test",
+        cwd: this.context.asAbsolutePath('./src/elixir_helper'),
         maxBuffer: 8192 * 8192
       };
       childProcess.exec(cmd, execArgs, (err, stdout) => {
@@ -98,9 +95,7 @@ export class ElixirAdapter implements TestAdapter {
     return testDatap;
   }
   parse(jsonOutput : string) : TestSuiteInfo {
-    console.log("jsonOutpu")
     let kids = JSON.parse(jsonOutput);
-    console.log("post")
     let children = kids.map((child: any[]) => {
       let fname = child[0]
       return {

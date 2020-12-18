@@ -1,13 +1,16 @@
-defmodule Discover do
-  def tests(args) do
+defmodule Mix.Tasks.Discover do
+  use Mix.Task
+  @shortdoc "finds unit tests"
+  def run(args) do
     start_path = case args do
       [p] -> p
-      _ -> "."
+      _ -> raise ("Needs the path.")
     end
     all_children = get_test_files(start_path)
     |> Enum.flat_map(&get_test_methods/1)
 
-    new_suite("root", all_children)
+    results = new_suite("root", all_children)
+    IO.inspect(results, limit: :infinity)
   end
   def new_suite(file_path, children \\ []), do: %{type: "suite", id: file_path, label: file_path, children: children}
 
@@ -30,7 +33,7 @@ defmodule Discover do
     file_path
     |> File.read!()
     |> Code.string_to_quoted!()
-    |> Macro.traverse([new_suite(file_path)], &Discover.pre_node/2, &Discover.post_node/2)
+    |> Macro.traverse([new_suite(file_path)], &pre_node/2, &post_node/2)
     |> case do
       {_, [%{children: []}]} -> []
       {_, [suite]} -> [suite]
@@ -74,7 +77,3 @@ defmodule Discover do
     {node, acc}
   end
 end
-results =
-  System.argv()
-  |> Discover.tests()
-Kernel.inspect(results, limit: :infinity) |> String.replace("%", "") |> IO.puts()
