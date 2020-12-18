@@ -5,7 +5,7 @@ defmodule VscodeElixirTestExplorer.MixProject do
       app: :vscode_elixir_test_explorer,
       version: "0.0.1",
       elixir: "~> 1.11",
-      elixirc_paths: ["src/vscode_ex_helper"],
+      elixirc_paths: ["."],
       compilers: Mix.compilers(),
       start_permanent: false,
       aliases: [],
