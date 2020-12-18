@@ -3,5 +3,6 @@
     ".git": true,
     "node_modules": true,
     "out": true
-  }
+  },
+  "elixirLS.projectDir": "src/vscode_ex_helper"
 }
