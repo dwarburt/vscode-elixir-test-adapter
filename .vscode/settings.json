@@ -4,5 +4,5 @@
     "node_modules": true,
     "out": true
   },
-  "elixirLS.projectDir": "src/vscode_ex_helper"
+  "elixirLS.projectDir": "src/elixir_helper"
 }
