@@ -6,36 +6,45 @@ defmodule Mix.Tasks.Discover do
       [p] -> p
       _ -> raise ("Needs the path.")
     end
-    all_children = get_test_files(start_path)
-    |> Enum.flat_map(&get_test_methods/1)
+    all_children =
+      get_test_suites(start_path)
 
-    new_suite("root", all_children)
+    #new_suite("root", "root", all_children)
+    all_children
     |> Jason.encode!()
+    #|> Io.inspect()
     |> IO.puts()
 
   end
-  def new_suite(file_path, children \\ []), do: %{type: "suite", id: file_path, label: file_path, children: children}
+  def new_suite(file_path, suite_name, children \\ []), do: %{type: "suite", id: file_path, label: suite_name, children: children}
 
-  def get_test_files(path) do
+  def get_test_suites(path) do
     all = File.ls!(path)
-    |> Enum.map(&Path.join(path, &1))
+
+    subs = all
+    |> Enum.filter(&File.dir?(Path.join(path, &1)))
+    |> Enum.map(fn (next_path) ->
+      get_test_suites(Path.join(path, next_path))
+    end)
 
     tests = all
     |> Enum.filter(&String.ends_with?(&1, "_test.exs"))
+    |> Enum.flat_map(fn p -> get_test_methods(Path.join(path, p), p) end)
+    # IO.puts("subs")
+    # IO.inspect(subs)
+    # IO.puts("tests")
+    # IO.inspect(tests)
+    # IO.puts("Both")
+    # IO.inspect(subs ++ tests)
+    # # raise "stop"
 
-    subs = all
-    |> Enum.filter(&File.dir?/1)
-    |> Enum.flat_map(fn (next_path) ->
-      get_test_files(next_path)
-    end)
-
-    tests ++ subs
+    new_suite(path, path, subs ++ tests |> Enum.reject(&Enum.empty?/1) )
   end
-  def get_test_methods(file_path) do
-    file_path
+  def get_test_methods(full_path, suite_name) do
+    full_path
     |> File.read!()
     |> Code.string_to_quoted!()
-    |> Macro.traverse([new_suite(file_path)], &pre_node/2, &post_node/2)
+    |> Macro.traverse([new_suite(full_path, suite_name)], &pre_node/2, &post_node/2)
     |> case do
       {_, [%{children: []}]} -> []
       {_, [suite]} -> [suite]
@@ -59,7 +68,7 @@ defmodule Mix.Tasks.Discover do
   end
 
   def push_description(acc, d) do
-    [new_suite(d) | acc]
+    [new_suite(d, d) | acc]
   end
 
 

@@ -77,7 +77,7 @@ export class ElixirAdapter implements TestAdapter {
     this.disposables = [];
   }
   async mix_deps_get() : Promise<string> {
-    let cmd = `mix deps.get`
+    let cmd = `mix do deps.get, compile`
     const execArgs: childProcess.ExecOptions = {
       cwd: this.context.asAbsolutePath('./src/elixir_helper'),
       maxBuffer: 8192 * 8192
