@@ -35,7 +35,7 @@ export class ElixirAdapter implements TestAdapter {
 
   async load(): Promise<void> {
 
-    this.log.info('Loading example tests');
+    this.log.info('Loading elixir tests');
 
     this.testsEmitter.fire(<TestLoadStartedEvent>{ type: 'started' });
 
@@ -47,7 +47,7 @@ export class ElixirAdapter implements TestAdapter {
 
   async run(tests: string[]): Promise<void> {
 
-    this.log.info(`Running example tests ${JSON.stringify(tests)}`);
+    this.log.info(`Running elixir tests ${JSON.stringify(tests)}`);
 
     this.testStatesEmitter.fire(<TestRunStartedEvent>{ type: 'started', tests });
 
