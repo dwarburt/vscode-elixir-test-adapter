@@ -16,7 +16,15 @@ defmodule Mix.Tasks.Discover do
     |> IO.puts()
 
   end
-  def new_suite(file_path, suite_name, children \\ []), do: %{type: "suite", id: file_path, label: suite_name, children: children}
+  def new_suite(file_path, suite_name, children \\ []) do
+    my_label = if String.ends_with?(suite_name, "_test.exs") || String.starts_with?(suite_name, "/") do
+      [my_label] = Path.split(suite_name) |> Enum.reverse() |> Enum.take(1) |> Enum.map(fn x -> String.replace(x, "_test.exs", "") end)
+      my_label
+    else
+      suite_name
+    end
+    %{type: "suite", id: file_path, label: my_label, children: children}
+  end
 
   def get_test_suites(path) do
     all = File.ls!(path)
@@ -26,19 +34,13 @@ defmodule Mix.Tasks.Discover do
     |> Enum.map(fn (next_path) ->
       get_test_suites(Path.join(path, next_path))
     end)
+    |> Enum.reject(fn suite -> Enum.empty?(suite.children) end)
 
     tests = all
     |> Enum.filter(&String.ends_with?(&1, "_test.exs"))
     |> Enum.flat_map(fn p -> get_test_methods(Path.join(path, p), p) end)
-    # IO.puts("subs")
-    # IO.inspect(subs)
-    # IO.puts("tests")
-    # IO.inspect(tests)
-    # IO.puts("Both")
-    # IO.inspect(subs ++ tests)
-    # # raise "stop"
 
-    new_suite(path, path, subs ++ tests |> Enum.reject(&Enum.empty?/1) )
+    new_suite(path, path, subs ++ tests)
   end
   def get_test_methods(full_path, suite_name) do
     full_path
