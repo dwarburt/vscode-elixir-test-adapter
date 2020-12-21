@@ -48,18 +48,12 @@ export class ElixirAdapter implements TestAdapter {
   }
 
   async load(): Promise<void> {
-
     this.log.info('Loading elixir tests');
-
     this.testsEmitter.fire(<TestLoadStartedEvent>{ type: 'started' });
-    console.log("in");
     this.rootTestSuite = await this.loadElixirTests();
-    console.log("out");
-
     this.testsEmitter.fire(<TestLoadFinishedEvent>{ type: 'finished', suite: this.rootTestSuite });
-    console.log("fired");
-
   }
+
   private get_test_entry(start:TestSuiteInfo, test_id : String) : TestInfo|TestSuiteInfo|undefined {
     if (start.id == test_id) {
       return start;
@@ -78,6 +72,7 @@ export class ElixirAdapter implements TestAdapter {
     }
     return undefined;
   }
+
   private get_nested_tests(suite:TestSuiteInfo):String[] {
     let ret : String[] = [];
     for (let child of suite.children) {
@@ -89,10 +84,9 @@ export class ElixirAdapter implements TestAdapter {
     }
     return ret;
   }
+
   async run(tests: string[]): Promise<void> {
-
     this.log.info(`Running elixir test cases ${JSON.stringify(tests)}`);
-
     this.testStatesEmitter.fire(<TestRunStartedEvent>{ type: 'started', tests });
     let test_promises = tests.map(async (test):Promise<string> => {
       let nested_tests_ids:String[] = [test];
@@ -113,10 +107,10 @@ export class ElixirAdapter implements TestAdapter {
       try {
         let results = await this.do_ws_cmd(`mix test ${test}`);
         nested_tests_ids.forEach(id => {
-        this.testStatesEmitter.fire(<TestEvent>{
+          this.testStatesEmitter.fire(<TestEvent>{
             test: id,
-          state: 'passed'
-        });
+            state: 'passed'
+          });
         })
         return results;
       }
@@ -216,7 +210,7 @@ export class ElixirAdapter implements TestAdapter {
     let ws = this.workspace.uri.fsPath;
     if (entry.file) {
       entry.file = path.join(ws, entry.file);
-      console.log(entry.file);
+
     }
     if (entry.type == 'suite') {
       for (let child of entry.children) {
