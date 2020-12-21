@@ -109,9 +109,7 @@ export class ElixirAdapter implements TestAdapter {
         let failure_count = 1;
         let fail_msg = "";
         let fail_test_id = ""
-        console.log("Begin parsing fails");
         error_log.split("\n").forEach((line) => {
-          console.log("handling line");
           if (line.startsWith(`  ${failure_count})`)) {
             fail_msg += line + "\n";
           }
@@ -126,7 +124,6 @@ export class ElixirAdapter implements TestAdapter {
             nested_tests_ids = nested_tests_ids.filter(i => i != fail_test_id)
           }
           else if (nested_tests_ids.includes(line.trim())) {
-            console.log("matched.")
             fail_test_id = line.trim();
           }
           else if (fail_msg != "") {
