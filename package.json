@@ -38,6 +38,7 @@
   },
   "devDependencies": {
     "@types/vscode": "~1.23.0",
+    "rxjs": "^6.6.3",
     "typescript": "^3.5.3",
     "vsce": "^1.65.0"
   },

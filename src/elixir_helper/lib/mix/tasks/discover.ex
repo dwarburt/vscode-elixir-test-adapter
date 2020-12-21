@@ -6,8 +6,10 @@ defmodule Mix.Tasks.Discover do
       [p] -> p
       _ -> raise ("Needs the path.")
     end
+    :ok = File.cd(start_path)
+
     all_children =
-      get_test_suites(start_path)
+      get_test_suites("test")
 
     #new_suite("root", "root", all_children)
     all_children
@@ -15,15 +17,6 @@ defmodule Mix.Tasks.Discover do
     #|> Io.inspect()
     |> IO.puts()
 
-  end
-  def new_suite(file_path, suite_name, children \\ []) do
-    my_label = if String.ends_with?(suite_name, "_test.exs") || String.starts_with?(suite_name, "/") do
-      [my_label] = Path.split(suite_name) |> Enum.reverse() |> Enum.take(1) |> Enum.map(fn x -> String.replace(x, "_test.exs", "") end)
-      my_label
-    else
-      suite_name
-    end
-    %{type: "suite", id: file_path, label: my_label, children: children}
   end
 
   def get_test_suites(path) do
@@ -54,8 +47,8 @@ defmodule Mix.Tasks.Discover do
   end
 
   def save_test(acc, name, ln) do
-    test_path = Enum.map(acc, &Map.fetch!(&1, :id)) |> Enum.reverse() |> Enum.join("/")
-    test = %{type: "test", id: "#{test_path}:#{ln}", label: name}
+    fname = acc |> Enum.reverse() |> Enum.at(0) |> Map.get(:id)
+    test = %{type: "test", id: "#{fname}:#{ln}", label: name}
     [head_suite | rest] = acc
     new_head_suite =
       head_suite
@@ -69,16 +62,25 @@ defmodule Mix.Tasks.Discover do
     [parent | rest]
   end
 
-  def push_description(acc, d) do
-    [new_suite(d, d) | acc]
+  def push_description(acc, d, ln) do
+    suite_path = acc |> Enum.reverse() |> Enum.at(0) |> Map.get(:id)
+    [new_suite("#{suite_path}:#{ln}", d) | acc]
   end
-
+  def new_suite(suite_path, suite_name, children \\ []) do
+    my_label = if String.ends_with?(suite_name, "_test.exs") || String.starts_with?(suite_name, "/") do
+      [my_label] = Path.split(suite_name) |> Enum.reverse() |> Enum.take(1) |> Enum.map(fn x -> String.replace(x, "_test.exs", "") end)
+      my_label
+    else
+      suite_name
+    end
+    %{type: "suite", id: "#{suite_path}", label: my_label, children: children}
+  end
 
   def pre_node(node = {:test, [line: ln], [test_name | _ast]}, acc) do
     {node, acc|>save_test(test_name, ln)}
   end
-  def pre_node(node = {:describe, [line: _ln], [ description | _ast]}, acc) do
-    {node, acc|>push_description(description)}
+  def pre_node(node = {:describe, [line: ln], [ description | _ast]}, acc) do
+    {node, acc|>push_description(description, ln)}
   end
   def pre_node(node, acc) do
     {node, acc}

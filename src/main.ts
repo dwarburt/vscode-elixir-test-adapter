@@ -21,7 +21,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 		const testHub = testExplorerExtension.exports;
 
-		// this will register an ElixirTestAdapter for each WorkspaceFolder
+		// this will register an ElixirAdapter for each WorkspaceFolder
 		context.subscriptions.push(new TestAdapterRegistrar(
 			testHub,
 			workspaceFolder => new ElixirAdapter(workspaceFolder, log, context),
