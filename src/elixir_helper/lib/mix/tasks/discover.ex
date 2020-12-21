@@ -48,7 +48,7 @@ defmodule Mix.Tasks.Discover do
 
   def save_test(acc, name, ln) do
     fname = acc |> Enum.reverse() |> Enum.at(0) |> Map.get(:id)
-    test = %{type: "test", id: "#{fname}:#{ln}", label: name}
+    test = %{type: "test", id: "#{fname}:#{ln}", file: fname, line: ln-1, label: name}
     [head_suite | rest] = acc
     new_head_suite =
       head_suite
@@ -73,7 +73,10 @@ defmodule Mix.Tasks.Discover do
     else
       suite_name
     end
-    %{type: "suite", id: "#{suite_path}", label: my_label, children: children}
+    case String.split(suite_path, ":") do
+      [file, line] -> %{type: "suite", id: "#{suite_path}", label: my_label, file: file, line: (Integer.parse(line)|>elem(0))-1, children: children}
+      _ -> %{type: "suite", id: "#{suite_path}", label: my_label, children: children}
+    end
   end
 
   def pre_node(node = {:test, [line: ln], [test_name | _ast]}, acc) do

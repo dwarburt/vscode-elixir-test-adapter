@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import * as childProcess from 'child_process'
 import { TestAdapter, TestLoadStartedEvent, TestLoadFinishedEvent, TestRunStartedEvent, TestRunFinishedEvent, TestSuiteEvent, TestEvent, TestSuiteInfo, TestInfo } from 'vscode-test-adapter-api';
 import { Log } from 'vscode-test-adapter-util';
@@ -31,7 +32,19 @@ export class ElixirAdapter implements TestAdapter {
     this.disposables.push(this.testsEmitter);
     this.disposables.push(this.testStatesEmitter);
     this.disposables.push(this.autorunEmitter);
+    this.disposables.push(this.createFileWatcher());
 
+  }
+  private createFileWatcher(): vscode.Disposable {
+    return vscode.workspace.onDidSaveTextDocument(async doc => {
+      const fname = doc.uri.fsPath;
+      if (fname.endsWith("_test.exs")) {
+        await this.load();
+      }
+      else if (fname.endsWith(".ex") || fname.endsWith(".exs")) {
+        this.autorunEmitter.fire();
+      }
+    });
   }
 
   async load(): Promise<void> {
@@ -39,10 +52,12 @@ export class ElixirAdapter implements TestAdapter {
     this.log.info('Loading elixir tests');
 
     this.testsEmitter.fire(<TestLoadStartedEvent>{ type: 'started' });
-
+    console.log("in");
     this.rootTestSuite = await this.loadElixirTests();
+    console.log("out");
 
     this.testsEmitter.fire(<TestLoadFinishedEvent>{ type: 'finished', suite: this.rootTestSuite });
+    console.log("fired");
 
   }
   private get_test_entry(start:TestSuiteInfo, test_id : String) : TestInfo|TestSuiteInfo|undefined {
@@ -87,14 +102,14 @@ export class ElixirAdapter implements TestAdapter {
           nested_tests_ids = this.get_nested_tests(ti);
         }
       }
-      if (nested_tests_ids) {
-        nested_tests_ids.forEach(id => {
-          this.testStatesEmitter.fire(<TestEvent>{
-            test: id,
-            state: 'running'
-          });
-        })
-      }
+
+      nested_tests_ids.forEach(id => {
+        this.testStatesEmitter.fire(<TestEvent>{
+          test: id,
+          state: 'running'
+        });
+      })
+
       try {
         let results = await this.do_ws_cmd(`mix test ${test}`);
         this.testStatesEmitter.fire(<TestEvent>{
@@ -130,14 +145,12 @@ export class ElixirAdapter implements TestAdapter {
             fail_msg += line + "\n";
           }
         });
-        if (nested_tests_ids) {
-          nested_tests_ids.forEach(id => {
-            this.testStatesEmitter.fire(<TestEvent>{
-              test: id,
-              state: "passed"
-            });
+        nested_tests_ids.forEach(id => {
+          this.testStatesEmitter.fire(<TestEvent>{
+            test: id,
+            state: "passed"
           });
-        }
+        });
 
         return err;
       }
@@ -193,6 +206,20 @@ export class ElixirAdapter implements TestAdapter {
   private async loadElixirTests() : Promise<TestSuiteInfo> {
     await this.do_helper_cmd(`mix do deps.get, compile`);
     let helper_output = await this.do_helper_cmd(`mix discover ${this.workspace.uri.fsPath}`);
-    return JSON.parse(helper_output) as TestSuiteInfo;
+    let rootSuite = JSON.parse(helper_output) as TestSuiteInfo;
+    this.fix_all_paths(rootSuite);
+    return rootSuite;
+  }
+  private fix_all_paths(entry : TestInfo|TestSuiteInfo):void {
+    let ws = this.workspace.uri.fsPath;
+    if (entry.file) {
+      entry.file = path.join(ws, entry.file);
+      console.log(entry.file);
+    }
+    if (entry.type == 'suite') {
+      for (let child of entry.children) {
+        this.fix_all_paths(child);
+      }
+    }
   }
 }
