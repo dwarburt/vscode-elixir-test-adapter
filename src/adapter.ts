@@ -84,7 +84,7 @@ export class ElixirAdapter implements TestAdapter {
       if (child.type == "test") {
         ret.push(child.id);
       } else {
-        ret.concat(this.get_nested_tests(child));
+        ret = ret.concat(this.get_nested_tests(child));
       }
     }
     return ret;
