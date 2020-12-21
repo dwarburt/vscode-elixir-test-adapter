@@ -127,7 +127,7 @@ export class ElixirAdapter implements TestAdapter {
         let fail_msg = "";
         let fail_test_id = ""
         error_log.split("\n").forEach((line) => {
-          if (line.startsWith(`  ${failure_count})`)) {
+          if (line.match(new RegExp(`^\\s*${failure_count}\\) test`))) {
             fail_msg += line + "\n";
           }
           else if (line.length == 0 && fail_msg != "") {
