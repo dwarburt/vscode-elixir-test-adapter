@@ -112,10 +112,12 @@ export class ElixirAdapter implements TestAdapter {
 
       try {
         let results = await this.do_ws_cmd(`mix test ${test}`);
+        nested_tests_ids.forEach(id => {
         this.testStatesEmitter.fire(<TestEvent>{
-          test: test,
+            test: id,
           state: 'passed'
         });
+        })
         return results;
       }
       catch(err) {
