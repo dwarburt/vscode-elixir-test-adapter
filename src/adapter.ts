@@ -120,6 +120,7 @@ export class ElixirAdapter implements TestAdapter {
         let failure_count = 1;
         let fail_msg = "";
         let fail_test_id = ""
+        let before_count = nested_tests_ids.length;
         error_log.split("\n").forEach((line) => {
           if (line.match(new RegExp(`^\\s*${failure_count}\\) test`))) {
             fail_msg += line + "\n";
@@ -141,12 +142,25 @@ export class ElixirAdapter implements TestAdapter {
             fail_msg += line + "\n";
           }
         });
-        nested_tests_ids.forEach(id => {
-          this.testStatesEmitter.fire(<TestEvent>{
-            test: id,
-            state: "passed"
+        if (before_count === nested_tests_ids.length) {
+          //if none of them failed, they all did.
+          nested_tests_ids.forEach(id => {
+            this.testStatesEmitter.fire(<TestEvent>{
+              test: id,
+              state: 'errored',
+              message: err
+            });
           });
-        });
+        } else {
+          // if some failed, the remainder succeeded
+          nested_tests_ids.forEach(id => {
+            this.testStatesEmitter.fire(<TestEvent>{
+              test: id,
+              state: "passed"
+            });
+          });
+
+        }
 
         return err;
       }
